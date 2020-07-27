@@ -98,7 +98,7 @@ int main(int argc, char const *argv[])
 	// "from_file": diag indices are taken from a given text file
 	// For a banded matrix as connection matrix choose equi_dist and diag_distance = 1
 	// For a full connection matrix choose D = 2 * N - 1 (and either uniform or equi_dist with diag_distance = 1)
-	int diag_distance = 0;  // distance between diagonals if diag_method == "equi_dist",
+	int diag_distance = katana::getCmdOption(argv, argv + argc, "-diag_distance", 0);  // distance between diagonals if diag_method == "equi_dist",
 							// minimum distance between diagonals if diag_method is "uniform", otherwise ignored
 							// Do not choose diag_distance too large. If (D - 1) * (2 * diag_distance - 1) >= 2 * (N - diag_margin) - 1 and method is uniform, the program will abort.
 	string diag_file_path = katana::getCmdOption(argv, argv + argc, "-diag_file_path", "diag.txt"); // path to text file containing D interger numbers n_prime_d, ignored if method is not "from_file" 
