@@ -2,7 +2,7 @@
 
 The following adaptations have to be done before compiling the code:
 
-1. If you want to use a different activation function than f = sin and/or a different input preprocessing function than g = tanh, you need to uncomment the corresponding lines in the file f.h.
+1. If you want to use a different activation function than f = sin and/or a different input preprocessing function than g = tanh, you need to modify the corresponding functions in f.h.
 
 2. If you want to use a task other than MNIST or Fashion-MNIST, you need to uncomment the corresponding lines in the file global_constants.h.
 

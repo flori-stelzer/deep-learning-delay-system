@@ -36,8 +36,11 @@ int main(int argc, char const *argv[])
 	string print_msg = "Simulation of the deep learning delay system.";
 	
 	// task, possible options are "MNIST", "Fashion-MNIST", "CIFAR-10", "SVHN"
-	string task = katana::getCmdOption(argv, argv + argc, "-task", "MNIST");
+	string task = "Fashion-MNIST-denoising";
 	// modify global_constants.h accordingly!
+	
+	// number of example images to save
+	int save_examples = katana::getCmdOption(argv, argv + argc, "-save_examples", 0);
 	
 	// print weights (and diagonals) after each training epoch to text files in weights folder?
 	bool print_weights_to_file = false;
@@ -80,6 +83,9 @@ int main(int argc, char const *argv[])
 	
 	// M = 784 and P = 10 are defined in global_constants.h
 	
+	// task parameter
+	double noise_sigma = 1.0;
+	
 	
 	// ... for the system/network architectur:
 	
@@ -107,10 +113,10 @@ int main(int argc, char const *argv[])
 	// ... for the training:
 	int number_of_epochs = katana::getCmdOption(argv, argv + argc, "-number_of_epochs", 100);
 	double eta_0 = katana::getCmdOption(argv, argv + argc, "-eta0", 0.01);
-	double eta_1 = katana::getCmdOption(argv, argv + argc, "-eta1", 1000.0);  // learning rate eta = min(eta_0, learning_rate_factor / step)
+	double eta_1 = katana::getCmdOption(argv, argv + argc, "-eta1", 1000.0);  // learning rate eta = min(eta_0, eta_1 / step)
 	bool pixel_shift = katana::getCmdOption_bool(argv, argv + argc, "-pixel_shift", false);  // on-off switch for training input random 1-pixel shift
 	int max_pixel_shift = katana::getCmdOption(argv, argv + argc, "-max_pixel_shift", 1);
-	bool input_noise = katana::getCmdOption_bool(argv, argv + argc, "-input_noise", false);  // on-off switch for training input gaussian noise
+	bool input_noise = katana::getCmdOption_bool(argv, argv + argc, "-training_noise", false);  // on-off switch for training input gaussian noise
 	double training_noise_sigma = katana::getCmdOption(argv, argv + argc, "-sigma", 0.01);  // standard deviation of gaussian noise to disturb training input
 	bool rotation = katana::getCmdOption_bool(argv, argv + argc, "-rotation", false);
 	double max_rotation_degrees = katana::getCmdOption(argv, argv + argc, "-max_rotation_degrees", 15.0);
@@ -201,19 +207,7 @@ int main(int argc, char const *argv[])
 					N_h, exp_precision);
 	
 	// task "MNIST", "Fashion-MNIST", ...
-	string data_dir;
-	if (task == "MNIST"){
-		data_dir = "data-MNIST";
-	} else if (task == "Fashion-MNIST"){
-		data_dir = "data-Fashion-MNIST";
-	} else if (task == "CIFAR-10"){
-		data_dir = "data-CIFAR-10";
-	} else if (task == "SVHN"){
-		data_dir = "data-SVHN";
-	} else {
-		cout << task << " is not a valid task." << endl;
-		abort();
-	}
+	string data_dir = "data-Fashion-MNIST";
 	
 	// read image data from files to arrays:
 	cube train_images(number_of_training_batches, training_batch_size, M);
@@ -243,8 +237,6 @@ int main(int argc, char const *argv[])
 	
 	// ### ### ### --- TRAINING AND TEST --- ### ### ###
 	
-
-	
 	
 	
 	vector<int> training_batch_indices;
@@ -252,8 +244,6 @@ int main(int argc, char const *argv[])
 	for (int i = 0; i < number_of_training_batches; ++i){
 		training_batch_indices.push_back(i);
 	}
-
-
 
 
 	// ### ### ### --- INITIALIZATION --- ### ### ###	
@@ -288,7 +278,6 @@ int main(int argc, char const *argv[])
 	// The delays are then tau_d = N - n'_d.
 	vector<int> diag_indices;
 	diag_indices = get_diag_indices(N, D, diag_method, diag_distance, diag_file_path, 0);
-
 
 	// initialize weights.
 	mat input_weights(N, M + 1, fill::zeros);
@@ -333,7 +322,7 @@ int main(int argc, char const *argv[])
 
 		start = clock();
 
-		// make vector with randomly shuffled indices between 0 and 59999 (for MNIST, different number for SVHN) for each epoch of the stochastic gradient descent 
+		// make vector with randomly shuffled indices between 0 and 49999 (for MNIST, different number for SVHN) for each epoch of the stochastic gradient descent 
 		vector<int> index_vector;
 		for (int index = 0; index < number_of_training_batches*training_batch_size; ++index){
 			index_vector.push_back(index);
@@ -463,6 +452,24 @@ int main(int argc, char const *argv[])
 				}
 			}
 
+			// get target
+			double targets[P];
+			for (int p = 0; p < P; ++p){
+				targets[p] = input_data(p);
+			}
+
+			// add noise to input:
+			vec noise = noise_sigma * vec(M, fill::randn);
+			input_data += noise;
+			for (int m = 0; m < M; ++m){
+				if (input_data[m] < 0.0){
+					input_data[m] = 0.0;
+				}
+				if (input_data[m] > 1.0){
+					input_data[m] = 1.0;
+				}
+			}
+
 			// solve the DDE (or network)
 			clock_t start_solve = clock();
 			if (system_simu == "dde_ibp"){
@@ -487,9 +494,7 @@ int main(int argc, char const *argv[])
 			clock_t end_solve = clock();
 			cumulative_solve_time += (end_solve - start_solve) / (double)CLOCKS_PER_SEC;
 
-			// get target vector
-			double targets[P];
-			get_targets(targets, label);
+
 
 			// compute deltas and gradient
 			clock_t start_backprop = clock();
@@ -528,7 +533,7 @@ int main(int argc, char const *argv[])
 			get_gradient(input_weight_gradient_0, weight_gradient_0, output_weight_gradient_0, deltas_0, output_deltas_0, input_data, node_states, f_prime_activations, g_primes, diag_indices, theta, alpha, N, L, exp_table);
 			double cos_sim = cosine_similarity(input_weight_gradient, weight_gradient, output_weight_gradient, input_weight_gradient_0, weight_gradient_0, output_weight_gradient_0);
 			cout << cos_sim << endl;
-			write_gradients_to_file(input_weight_gradient, weight_gradient, output_weight_gradient, input_weight_gradient_0, weight_gradient_0, output_weight_gradient_0, epoch + 1, step_index, validation_batch_index);
+			write_gradients_to_file(input_weight_gradient, weight_gradient, output_weight_gradient, input_weight_gradient_0, weight_gradient_0, output_weight_gradient_0, epoch + 1, step_index, 0);
 			*/
 
 			input_weight_gradient = input_weight_gradient % input_weights_mask;
@@ -582,8 +587,9 @@ int main(int argc, char const *argv[])
 		output_weights_scaled = output_weights / (1.0 - dropout_rate);
 
 		// loop to get accuracy on training set:
-		int correct_count = 0;  // counter for calculating accuracy
-		for (int index = 0; index < number_of_training_batches * training_batch_size; ++index){
+		double mse_sum = 0.0; ;  
+		for (int index = 0; index < number_of_training_batches *training_batch_size; ++index){
+			//cout << "validation step (on training set)" << index + 1 << endl;
 
 			// select image as input
 			div_t div_result = div(index, training_batch_size);
@@ -592,6 +598,24 @@ int main(int argc, char const *argv[])
 			vec input_data = train_images.tube(batch_index, image_index);
 			int label = train_labels[batch_index][image_index];
 
+			// get target
+			double targets[P];
+			for (int p = 0; p < P; ++p){
+				targets[p] = input_data(p);
+			}
+
+			// add noise to input:
+			vec noise = noise_sigma * vec(M, fill::randn);
+			input_data += noise;
+			for (int m = 0; m < M; ++m){
+				if (input_data[m] < 0.0){
+					input_data[m] = 0.0;
+				}
+				if (input_data[m] > 1.0){
+					input_data[m] = 1.0;
+				}
+			}
+
 			// solve the DDE (or network)
 			clock_t start_solve = clock();
 			if (system_simu == "dde_ibp"){
@@ -616,25 +640,41 @@ int main(int argc, char const *argv[])
 			clock_t end_solve = clock();
 			cumulative_solve_time += (end_solve - start_solve) / (double)CLOCKS_PER_SEC;
 
-			// get target vector
-			double targets[P];
-			get_targets(targets, label);
 
-			int output_result = distance(outputs, max_element(outputs, outputs + P));
-			if (label == output_result){
-				++correct_count;
+			double mse = 0;
+			for (int p = 0; p < P; ++p){
+				mse += pow(outputs[p] - targets[p], 2.0);
 			}
+			mse = mse/(double)P;
+			mse_sum += mse;
 		}
-		training_accuracy_vector.push_back(double(correct_count) / (double)(number_of_training_batches*training_batch_size/100.0));
-
+		training_accuracy_vector.push_back(mse_sum / 50000.0);
 
 		// loop for validation:
-		correct_count = 0;
+		mse_sum = 0.0; ;
 		for (int index = 0; index < test_batch_size; ++index){
 
 			vec input_data = test_images.row(index).t();
 			int label = test_labels[index];
 
+			// get target
+			double targets[P];
+			for (int p = 0; p < P; ++p){
+				targets[p] = input_data(p);
+			}
+
+			// add noise to input:
+			vec noise = noise_sigma * vec(M, fill::randn);
+			input_data += noise;
+			for (int m = 0; m < M; ++m){
+				if (input_data[m] < 0.0){
+					input_data[m] = 0.0;
+				}
+				if (input_data[m] > 1.0){
+					input_data[m] = 1.0;
+				}
+			}
+
 			// solve the DDE (or network)
 			clock_t start_solve = clock();
 			if (system_simu == "dde_ibp"){
@@ -659,19 +699,42 @@ int main(int argc, char const *argv[])
 			clock_t end_solve = clock();
 			cumulative_solve_time += (end_solve - start_solve) / (double)CLOCKS_PER_SEC;
 
-			// get target vector
-			double targets[P];
-			get_targets(targets, label);
 
-			int output_result = distance(outputs, max_element(outputs, outputs + P));
-			if (label == output_result){
-				++correct_count;
+			// save example images
+			if (index < save_examples){
+				string original_file_name = "example_results/epoch_" + to_string(epoch + 1) + "_example_" + to_string(index + 1) + "_original.txt";
+				string input_file_name = "example_results/epoch_" + to_string(epoch + 1) + "_example_" + to_string(index + 1) + "_input.txt";
+				string output_file_name = "example_results/epoch_" + to_string(epoch + 1) + "_example_" + to_string(index + 1) + "_output.txt";
+				ofstream original_file;
+				original_file.open(original_file_name);
+				for (int p = 0; p < P; ++p){
+					original_file << targets[p] << endl;
+				}
+				original_file.close();
+				ofstream input_file;
+				input_file.open(input_file_name);
+				for (int p = 0; p < P; ++p){
+					input_file << input_data(p) << endl;
+				}
+				input_file.close();
+				ofstream output_file;
+				output_file.open(output_file_name);
+				for (int p = 0; p < P; ++p){
+					output_file << outputs[p] << endl;
+				}
+				output_file.close();
 			}
+
+			double mse = 0;
+			for (int p = 0; p < P; ++p){
+				mse += pow(outputs[p] - targets[p], 2.0);
+			}
+			mse = mse/(double)P;
+			mse_sum += mse;
 		}
-		accuracy_vector.push_back(double(correct_count) / (double)(test_batch_size/100.0));
+		accuracy_vector.push_back(mse_sum / 10000.0);
 
-		cout << "epoch " << epoch + 1 << ": validation accuracy = " << double(correct_count) / (double)(test_batch_size/100.0) << endl;
-
+		cout << "epoch " << epoch + 1 << ": validation MSE = " << mse_sum / 10000.0 << endl;
 		// eventually print weights to file at end of each epoch
 		if (print_weights_to_file){
 			print_weights(input_weights_scaled, hidden_weights_scaled, output_weights_scaled, diag_indices, 0, epoch);
@@ -683,7 +746,7 @@ int main(int argc, char const *argv[])
 	}
 
 	// print result to file:
-	print_results(results_file_name, diag_indices, training_accuracy_vector, accuracy_vector, similarity_vector);
+	print_results(results_file_name, 0, diag_indices, training_accuracy_vector, accuracy_vector, similarity_vector);
 
 	
 	// for cpu time measuring
