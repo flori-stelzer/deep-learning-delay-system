@@ -203,7 +203,7 @@ void solve_network_decoupled(mat &activations, mat &node_states, double (&output
 
 
 void solve_network_decoupled_fast(mat &activations, mat &node_states, double (&output_activations)[P], double (&outputs)[P], vec &g_primes,
-					vec &input_data, mat input_weights, cube hidden_weights, mat output_weights, int N, int L, vector<int> &diag_indices)
+					vec &input_data, mat &input_weights, cube &hidden_weights, mat &output_weights, int N, int L, vector<int> &diag_indices)
 {
 	/*
 	Function to solve the decoupled network equations, i.e. a classical multi-layer neural network.

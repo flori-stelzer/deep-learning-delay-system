@@ -260,7 +260,7 @@ void get_gradient(mat &input_weight_gradient, cube &weight_gradient, mat &output
 }
 
 
-void get_gradient_classical_backprop(mat &input_weight_gradient, cube &weight_gradient, mat &output_weight_gradient, vec &input_data, mat &node_states, mat &f_prime_activations, vec &g_primes, double (&outputs)[P], double (&targets)[P], cube hidden_weights, mat output_weights, vector<int> diag_indices, int N, int L){
+void get_gradient_classical_backprop(mat &input_weight_gradient, cube &weight_gradient, mat &output_weight_gradient, vec &input_data, mat &node_states, mat &f_prime_activations, vec &g_primes, double (&outputs)[P], double (&targets)[P], cube &hidden_weights, mat &output_weights, vector<int> diag_indices, int N, int L){
 	/*
 	Function to compute the gradient using classical backpropagation.
 	For the hidden weights only the gradients for the nonzero diagonals (and the bias weights) must be nonzero. 

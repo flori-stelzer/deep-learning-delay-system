@@ -111,8 +111,6 @@ int main(int argc, char const *argv[])
 	bool rotation = katana::getCmdOption_bool(argv, argv + argc, "-rotation", false);
 	double max_rotation_degrees = katana::getCmdOption(argv, argv + argc, "-max_rotation_degrees", 15.0);
 	bool horizontal_flip = katana::getCmdOption_bool(argv, argv + argc, "-flip", false);  // only for CIFAR-10
-	// dropout
-	double dropout_rate = katana::getCmdOption(argv, argv + argc, "-dropout", 0.0);
 	
 	// ... for weight initialization:
 	double initial_input_weigt_radius = sqrt(6.0 / ((double)D/2.0 + (double)M + 1.0));
@@ -297,15 +295,7 @@ int main(int argc, char const *argv[])
 					   initial_input_weigt_radius, initial_hidden_weigt_radius, initial_output_weigt_radius, false);
 	}
 
-	// weights for test_runs.
-	mat input_weights_scaled(N, M + 1, fill::zeros);
-	mat output_weights_scaled(P, N + 1, fill::zeros);
-	cube hidden_weights_scaled(L - 1, N, N + 1, fill::zeros);
 
-	// dropout mask for weights:
-	mat input_weights_mask(N, M + 1, fill::ones);
-	cube hidden_weights_mask(L - 1, N, N + 1, fill::ones);
-	mat output_weights_mask(P, N + 1, fill::ones);
 
 
 
@@ -340,58 +330,8 @@ int main(int argc, char const *argv[])
 		int step_index = 0;
 		for (int index : index_vector){
 			++step_index;
+			cout << step_index << " of " << number_of_training_batches*training_batch_size << endl;
 
-			// choose random dropout nodes
-			input_weights_mask = mat(N, M + 1, fill::ones);
-			hidden_weights_mask = cube(L - 1, N, N + 1, fill::ones);
-			output_weights_mask = mat(P, N + 1, fill::ones);
-			// input layer
-			for (int m = 0; m < M; ++m){
-				double random_num = uniform(0.0, 1.0);
-				if (random_num < dropout_rate){
-					for (int n = 0; n < N; ++n){
-						input_weights_mask(n, m) = 0.0;
-					}
-				}
-			}
-			// first hidden layer
-			for (int n = 0; n < N; ++n){
-				double random_num = uniform(0.0, 1.0);
-				if (random_num < dropout_rate){
-					for (int m = 0; m < M + 1; ++m){
-						input_weights_mask(n, m) = 0.0;
-					}
-					for (int j = 0; j < N; ++j){
-						hidden_weights_mask(0, j, n) = 0.0;
-					}
-				}
-			}
-			// hidden layers except first and last
-			for (int l = 1; l < L - 1; ++l){
-				for (int n = 0; n < N; ++n){
-					double random_num = uniform(0.0, 1.0);
-					if (random_num < dropout_rate){
-						for (int i = 0; i < N + 1; ++i){
-							hidden_weights_mask(l - 1, n, i) = 0.0;
-						}
-						for (int j = 0; j < N; ++j){
-							hidden_weights_mask(l, j, n) = 0.0;
-						}
-					}
-				}
-			}
-			// last hidden layer
-			for (int n = 0; n < N; ++n){
-				double random_num = uniform(0.0, 1.0);
-				if (random_num < dropout_rate){
-					for (int i = 0; i < N + 1; ++i){
-						hidden_weights_mask(L - 2, n, i) = 0.0;
-					}
-					for (int p = 0; p < P; ++p){
-						output_weights_mask(p, n) = 0.0;
-					}
-				}
-			}
 
 			// record data for video: step 0 
 			if (record_data && epoch == 0 && step_index == 1){
@@ -463,19 +403,19 @@ int main(int argc, char const *argv[])
 			clock_t start_solve = clock();
 			if (system_simu == "dde_ibp"){
 				solve_dde_ibp(activations, node_states, output_activations, outputs, g_primes,
-							  input_data, input_weights%input_weights_mask, hidden_weights%hidden_weights_mask, output_weights%output_weights_mask, diag_indices, theta, alpha,
+							  input_data, input_weights, hidden_weights, output_weights, diag_indices, theta, alpha,
 							  N, L, N_h);
 			} else if (system_simu == "dde_heun"){
 				solve_dde_heun(activations, node_states, output_activations, outputs, g_primes,
-							  input_data, input_weights%input_weights_mask, hidden_weights%hidden_weights_mask, output_weights%output_weights_mask, diag_indices, theta, alpha,
+							  input_data, input_weights, hidden_weights, output_weights, diag_indices, theta, alpha,
 							  N, L, N_h);
 			} else if (system_simu == "network"){
 				solve_network(activations, node_states, output_activations, outputs, g_primes,
-							  input_data, input_weights%input_weights_mask, hidden_weights%hidden_weights_mask, output_weights%output_weights_mask, theta, alpha,
+							  input_data, input_weights, hidden_weights, output_weights, theta, alpha,
 							  N, L);
 			} else if (system_simu == "network_decoupled"){
 				solve_network_decoupled_fast(activations, node_states, output_activations, outputs, g_primes,
-							  input_data, input_weights%input_weights_mask, hidden_weights%hidden_weights_mask, output_weights%output_weights_mask, N, L, diag_indices);
+							  input_data, input_weights, hidden_weights, output_weights, N, L, diag_indices);
 			} else {
 				cout << system_simu << " is not a valid value for the system_simu option." << endl;
 				abort();
@@ -491,10 +431,10 @@ int main(int argc, char const *argv[])
 			clock_t start_backprop = clock();
 			mat f_prime_activations = f_prime_matrix(activations);
 			if (grad_comp == "backprop_standard"){
-				get_deltas(deltas, output_deltas, outputs, targets, f_prime_activations, hidden_weights%hidden_weights_mask, output_weights%output_weights_mask, diag_indices, theta, alpha, N, L, exp_table);
+				get_deltas(deltas, output_deltas, outputs, targets, f_prime_activations, hidden_weights, output_weights, diag_indices, theta, alpha, N, L, exp_table);
 				get_gradient(input_weight_gradient, weight_gradient, output_weight_gradient, deltas, output_deltas, input_data, node_states, f_prime_activations, g_primes, diag_indices, theta, alpha, N, L, exp_table);
 			} else if (grad_comp == "backprop_classic"){
-				get_gradient_classical_backprop(input_weight_gradient, weight_gradient, output_weight_gradient, input_data, node_states, f_prime_activations, g_primes, outputs, targets, hidden_weights%hidden_weights_mask, output_weights%output_weights_mask, diag_indices, N, L);
+				get_gradient_classical_backprop(input_weight_gradient, weight_gradient, output_weight_gradient, input_data, node_states, f_prime_activations, g_primes, outputs, targets, hidden_weights, output_weights, diag_indices, N, L);
 			} else {
 				cout << grad_comp << " is not a valid value for the grad_comp option." << endl;
 				abort();
@@ -527,8 +467,8 @@ int main(int argc, char const *argv[])
 			write_gradients_to_file(input_weight_gradient, weight_gradient, output_weight_gradient, input_weight_gradient_0, weight_gradient_0, output_weight_gradient_0, epoch + 1, step_index, validation_batch_index);
 			*/
 
-			weight_gradient = weight_gradient % hidden_weights_mask;
-			output_weight_gradient = output_weight_gradient % output_weights_mask;
+			weight_gradient = weight_gradient;
+			output_weight_gradient = output_weight_gradient;
 
 			// perform weight updates
 			hidden_weights += - eta * weight_gradient;
@@ -570,10 +510,6 @@ int main(int argc, char const *argv[])
 			}
 		}
 
-		//weight scaling
-		input_weights_scaled = input_weights;
-		hidden_weights_scaled = hidden_weights / (1.0 - dropout_rate);
-		output_weights_scaled = output_weights / (1.0 - dropout_rate);
 
 		// loop to get accuracy on training set:
 		int correct_count = 0;  // counter for calculating accuracy
@@ -590,19 +526,19 @@ int main(int argc, char const *argv[])
 			clock_t start_solve = clock();
 			if (system_simu == "dde_ibp"){
 				solve_dde_ibp(activations, node_states, output_activations, outputs, g_primes,
-							  input_data, input_weights_scaled, hidden_weights_scaled, output_weights_scaled, diag_indices, theta, alpha,
+							  input_data, input_weights, hidden_weights, output_weights, diag_indices, theta, alpha,
 							  N, L, N_h);
 			} else if (system_simu == "dde_heun"){
 				solve_dde_heun(activations, node_states, output_activations, outputs, g_primes,
-							  input_data, input_weights_scaled, hidden_weights_scaled, output_weights_scaled, diag_indices, theta, alpha,
+							  input_data, input_weights, hidden_weights, output_weights, diag_indices, theta, alpha,
 							  N, L, N_h);
 			} else if (system_simu == "network"){
 				solve_network(activations, node_states, output_activations, outputs, g_primes,
-							  input_data, input_weights_scaled, hidden_weights_scaled, output_weights_scaled, theta, alpha,
+							  input_data, input_weights, hidden_weights, output_weights, theta, alpha,
 							  N, L);
 			} else if (system_simu == "network_decoupled"){
 				solve_network_decoupled_fast(activations, node_states, output_activations, outputs, g_primes,
-							  input_data, input_weights_scaled, hidden_weights_scaled, output_weights_scaled, N, L, diag_indices);
+							  input_data, input_weights, hidden_weights, output_weights, N, L, diag_indices);
 			} else {
 				cout << system_simu << " is not a valid value for the system_simu parameter." << endl;
 				abort();
@@ -633,19 +569,19 @@ int main(int argc, char const *argv[])
 			clock_t start_solve = clock();
 			if (system_simu == "dde_ibp"){
 				solve_dde_ibp(activations, node_states, output_activations, outputs, g_primes,
-							  input_data, input_weights_scaled, hidden_weights_scaled, output_weights_scaled, diag_indices, theta, alpha,
+							  input_data, input_weights, hidden_weights, output_weights, diag_indices, theta, alpha,
 							  N, L, N_h);
 			} else if (system_simu == "dde_heun"){
 				solve_dde_heun(activations, node_states, output_activations, outputs, g_primes,
-							  input_data, input_weights_scaled, hidden_weights_scaled, output_weights_scaled, diag_indices, theta, alpha,
+							  input_data, input_weights, hidden_weights, output_weights, diag_indices, theta, alpha,
 							  N, L, N_h);
 			} else if (system_simu == "network"){
 				solve_network(activations, node_states, output_activations, outputs, g_primes,
-							  input_data, input_weights_scaled, hidden_weights_scaled, output_weights_scaled, theta, alpha,
+							  input_data, input_weights, hidden_weights, output_weights, theta, alpha,
 							  N, L);
 			} else if (system_simu == "network_decoupled"){
 				solve_network_decoupled_fast(activations, node_states, output_activations, outputs, g_primes,
-							  input_data, input_weights_scaled, hidden_weights_scaled, output_weights_scaled, N, L, diag_indices);
+							  input_data, input_weights, hidden_weights, output_weights, N, L, diag_indices);
 			} else {
 				cout << system_simu << " is not a valid value for the system_simu parameter." << endl;
 				abort();
@@ -668,7 +604,7 @@ int main(int argc, char const *argv[])
 
 		// eventually print weights to file at end of each epoch
 		if (print_weights_to_file){
-			print_weights(input_weights_scaled, hidden_weights_scaled, output_weights_scaled, diag_indices, 0, epoch);
+			print_weights(input_weights, hidden_weights, output_weights, diag_indices, 0, epoch);
 		}
 
 		ende = clock();
