@@ -330,7 +330,7 @@ int main(int argc, char const *argv[])
 		int step_index = 0;
 		for (int index : index_vector){
 			++step_index;
-			cout << step_index << " of " << number_of_training_batches*training_batch_size << endl;
+			//cout << step_index << " of " << number_of_training_batches*training_batch_size << endl;
 
 
 			// record data for video: step 0 
