@@ -382,14 +382,16 @@ int main(int argc, char const *argv[])
 					}
 				}
 				// first hidden layer
-				for (int n = 0; n < N; ++n){
-					double random_num = uniform(0.0, 1.0);
-					if (random_num < dropout_rate){
-						for (int m = 0; m < M + 1; ++m){
-							input_weights_mask(n, m) = 0.0;
-						}
-						for (int j = 0; j < N; ++j){
-							hidden_weights_mask(0, j, n) = 0.0;
+				if (L > 1){
+					for (int n = 0; n < N; ++n){
+						double random_num = uniform(0.0, 1.0);
+						if (random_num < dropout_rate){
+							for (int m = 0; m < M + 1; ++m){
+								input_weights_mask(n, m) = 0.0;
+							}
+							for (int j = 0; j < N; ++j){
+								hidden_weights_mask(0, j, n) = 0.0;
+							}
 						}
 					}
 				}
@@ -408,14 +410,16 @@ int main(int argc, char const *argv[])
 					}
 				}
 				// last hidden layer
-				for (int n = 0; n < N; ++n){
-					double random_num = uniform(0.0, 1.0);
-					if (random_num < dropout_rate){
-						for (int i = 0; i < N + 1; ++i){
-							hidden_weights_mask(L - 2, n, i) = 0.0;
-						}
-						for (int p = 0; p < P; ++p){
-							output_weights_mask(p, n) = 0.0;
+				if (L > 1){
+					for (int n = 0; n < N; ++n){
+						double random_num = uniform(0.0, 1.0);
+						if (random_num < dropout_rate){
+							for (int i = 0; i < N + 1; ++i){
+								hidden_weights_mask(L - 2, n, i) = 0.0;
+							}
+							for (int p = 0; p < P; ++p){
+								output_weights_mask(p, n) = 0.0;
+							}
 						}
 					}
 				}

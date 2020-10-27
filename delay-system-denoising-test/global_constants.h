@@ -3,7 +3,6 @@
 
 namespace globalconstants
 {
-
 	const int M = 784;  // number of features = number of input nodes
 	const int P = 784;  // number of classes = number of output nodes
 	const int number_of_training_batches = 6;

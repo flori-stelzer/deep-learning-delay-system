@@ -112,7 +112,7 @@ int main(int argc, char const *argv[])
 	
 	// ... for the training:
 	int number_of_epochs = katana::getCmdOption(argv, argv + argc, "-number_of_epochs", 100);
-	double eta_0 = katana::getCmdOption(argv, argv + argc, "-eta0", 0.01);
+	double eta_0 = katana::getCmdOption(argv, argv + argc, "-eta0", 0.001);
 	double eta_1 = katana::getCmdOption(argv, argv + argc, "-eta1", 1000.0);  // learning rate eta = min(eta_0, eta_1 / step)
 	bool pixel_shift = katana::getCmdOption_bool(argv, argv + argc, "-pixel_shift", false);  // on-off switch for training input random 1-pixel shift
 	int max_pixel_shift = katana::getCmdOption(argv, argv + argc, "-max_pixel_shift", 1);
@@ -240,7 +240,7 @@ int main(int argc, char const *argv[])
 	
 	
 	vector<int> training_batch_indices;
-	cout << "Begin training.";
+	cout << "Begin training." << endl;
 	for (int i = 0; i < number_of_training_batches; ++i){
 		training_batch_indices.push_back(i);
 	}
@@ -348,14 +348,16 @@ int main(int argc, char const *argv[])
 				}
 			}
 			// first hidden layer
-			for (int n = 0; n < N; ++n){
-				double random_num = uniform(0.0, 1.0);
-				if (random_num < dropout_rate){
-					for (int m = 0; m < M + 1; ++m){
-						input_weights_mask(n, m) = 0.0;
-					}
-					for (int j = 0; j < N; ++j){
-						hidden_weights_mask(0, j, n) = 0.0;
+			if (L > 1){
+				for (int n = 0; n < N; ++n){
+					double random_num = uniform(0.0, 1.0);
+					if (random_num < dropout_rate){
+						for (int m = 0; m < M + 1; ++m){
+							input_weights_mask(n, m) = 0.0;
+						}
+						for (int j = 0; j < N; ++j){
+							hidden_weights_mask(0, j, n) = 0.0;
+						}
 					}
 				}
 			}
@@ -374,14 +376,16 @@ int main(int argc, char const *argv[])
 				}
 			}
 			// last hidden layer
-			for (int n = 0; n < N; ++n){
-				double random_num = uniform(0.0, 1.0);
-				if (random_num < dropout_rate){
-					for (int i = 0; i < N + 1; ++i){
-						hidden_weights_mask(L - 2, n, i) = 0.0;
-					}
-					for (int p = 0; p < P; ++p){
-						output_weights_mask(p, n) = 0.0;
+			if (L > 1){
+				for (int n = 0; n < N; ++n){
+					double random_num = uniform(0.0, 1.0);
+					if (random_num < dropout_rate){
+						for (int i = 0; i < N + 1; ++i){
+							hidden_weights_mask(L - 2, n, i) = 0.0;
+						}
+						for (int p = 0; p < P; ++p){
+							output_weights_mask(p, n) = 0.0;
+						}
 					}
 				}
 			}
