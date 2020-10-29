@@ -44,18 +44,18 @@ void read_files(cube &train_images, mat &test_images, int (&train_labels)[number
 	and the labels to int arrays.
 	
 	Args:
-	train_images: reference to arma::cube with 6 rows, 10000 cols, 784 slices.
+	train_images: reference to arma::cube with 6 rows, 10000 cols, 784 slices (or corresponding numbers if task != MNIST).
 	              To be filled with training image data.
 				  Each row represents one training data batch,
 				  each col of represents one image,
 				  each slice represents one pixel.
-	test_images:  reference to arma::matrix with 10000 rows, 784 cols.
+	test_images:  reference to arma::matrix with 10000 rows, 784 cols (or corresponding numbers if task != MNIST).
 	              To be filled with test image data.
 				  Each row of represents one image,
 				  each col (of a row) represents one pixel.
-	train_labels: reference to an int array with size 6 X 10000.
+	train_labels: reference to an int array with size number_of_training_batches x training_batch_size (e.g. 6 x 10 for MNIST).
 	              To be filled with labels (0, 1, ..., 9) of the training images.
-	test_labels:  reference to an int array with size 10000.
+	test_labels:  reference to an int array with size test_batch_size (e.g. 10000 for MNIST).
 	              To be filled with labels of the test images.
 	data_dir:     string
 	              "../" + data_dir is the path to the directory containing the MNIST resp. Fashion-MNIST data set.
@@ -352,13 +352,16 @@ void get_targets(double (&targets)[P], int label){
 
 void pixel_shift28(arma::vec &input_data, int max_pixel_shift){
 	/*
-	Funkcion to shift the input image randomly by at most one pixel per direction. I.e. there are 9 possible variants.
+	Function to shift the input image randomly by at most max_pixel_shift pixel per direction.
+	I.e. if max_pixel_shift==1, then there are 9 possible variants.
 	The image is always shifted by a full pixel, so no interpolation is necessary.
 	The resulting empty pixels at the margin of the image are filled with zeros (white).
 	
 	Args:
-	input_data:	reference to arma::vec of length M = 784.
-				Input vector. Contains the pixel values of an input image.
+	input_data:		 reference to arma::vec of length M = 784.
+					 Input vector. Contains the pixel values of an input image.
+	max_pixel_shift: int
+					 Maximum pixel shift distance.
 	*/
 	
 	// reshape input data to 2D image
@@ -641,6 +644,10 @@ void print_results(string results_file_name, int validation_batch_index, vector<
 								Vector containing the training accuracies for each epoch.
 	accuracy_vector:			vector<double>.
 								Vector containing the validation accuracies for each epoch.
+	similarity_vector			vector<double>.
+								Vector containing the cosine similarities between backprop gradient
+								and numerically computed gradient if gradient check is switched on,
+								otherwise empty vector.
 	*/
 	int epochs = accuracy_vector.size();
 	

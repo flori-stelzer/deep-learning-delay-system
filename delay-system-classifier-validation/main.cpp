@@ -39,7 +39,7 @@ int main(int argc, char const *argv[])
 	string task = katana::getCmdOption(argv, argv + argc, "-task", "MNIST");
 	// modify global_constants.h accordingly!
 	
-	// print weights (and diagonals) after each training epoch to text files in weights folder?
+	// print weights (and diagonals) after each training epoch to text files in weights folder
 	bool print_weights_to_file = false;
 	
 	// record data for time-signal video (or plot), only for MNIST or Fashion-MNIST
@@ -51,7 +51,7 @@ int main(int argc, char const *argv[])
 	// and save them in the text file diag.txt. This will be done 6 times, i.e. the text file
 	// will contain 6 lines of diag indices, which can be used for 6-fold cross validation
 	bool make_diags = katana::getCmdOption_bool(argv, argv + argc, "-make_diags", false);
-	// If the following option is true, the program will create initial weight files and stop.
+	// If the following option is true, the program will create initial weight files and abort.
 	bool save_init_weights = katana::getCmdOption_bool(argv, argv + argc, "-save_init_weights", false);
 	// If the following option is true, the program will load the initial weights from files instead of creating random weights.
 	// Note that the corresponding diag file must be loaded as well.
@@ -60,7 +60,7 @@ int main(int argc, char const *argv[])
 	// if between 1 and 6, then cross_validation will be set to false the simulation will only be done for this validation batch 
 	int validation_batch = katana::getCmdOption(argv, argv + argc, "-validation_batch", 0);
 	// if true: 6-fold cross validation
-	// if false: training with batches 1-5 and validation with batch 6
+	// if false: validation using the given batch, training with the remaining batches
 	bool cross_validation = true;
 	if (validation_batch > 0){
 		cross_validation = false;
@@ -86,14 +86,14 @@ int main(int argc, char const *argv[])
 	
 	// ### ### ### --- PARAMETERS --- ### ### ### 
 	
-	// M = 784 and P = 10 are defined in global_constants.h
+	// M and P are defined in global_constants.h
 	
 	
 	// ... for the system/network architectur:
 	
 	int N = katana::getCmdOption(argv, argv + argc, "-N", 100);  // number of nodes per hidden layer
 	int L = katana::getCmdOption(argv, argv + argc, "-L", 2);  // number of hidden layers
-	int D = katana::getCmdOption(argv, argv + argc, "-D", 50);  // number of delays (NOTE: must be the correct number also if diag_method = "full" or "from_file")
+	int D = katana::getCmdOption(argv, argv + argc, "-D", 50);  // number of delays (NOTE: must be the correct number also if diag_method == "from_file")
 	
 	double theta = katana::getCmdOption(argv, argv + argc, "-theta", 0.5);  // node separation
 	double alpha = -1.0;  // factor in linear part of delay system
@@ -208,7 +208,7 @@ int main(int argc, char const *argv[])
 					pixel_shift, input_noise, training_noise_sigma,
 					N_h, exp_precision);
 	
-	// task "MNIST", "Fashion-MNIST", ...
+	// determine data directory
 	string data_dir;
 	if (task == "MNIST"){
 		data_dir = "data-MNIST";
@@ -229,7 +229,7 @@ int main(int argc, char const *argv[])
 	int train_labels[number_of_training_batches][training_batch_size];
 	int test_labels[test_batch_size];
 	read_files(train_images, test_images, train_labels, test_labels, data_dir);
-	// The test images are not used at the moment.
+	// The test images are not used in this version of the program (validation version).
 	
 	
 	// for video:
@@ -356,14 +356,14 @@ int main(int argc, char const *argv[])
 
 			start = clock();
 
-			// make vector with randomly shuffled indices between 0 and 49999 (for MNIST, different number for SVHN) for each epoch of the stochastic gradient descent 
+			// make vector with randomly shuffled indices between 0 and 49999 (for MNIST, Fashion-MNIST or CIFAR-10; different number for SVHN) for each epoch of the stochastic gradient descent 
 			vector<int> index_vector;
 			for (int index = 0; index < (number_of_training_batches - 1)*training_batch_size; ++index){
 				index_vector.push_back(index);
 			}
 			shuffle(begin(index_vector), std::end(index_vector), rng);
 
-			// loop over single training steps:
+			// loop over training steps:
 			int step_index = 0;
 			for (int index : index_vector){
 				++step_index;
@@ -549,14 +549,6 @@ int main(int argc, char const *argv[])
 					similarity_vector.push_back(cos_sim);
 				}
 				
-				// compare gradient with old modified bp
-				/*
-				get_deltas(deltas_0, output_deltas_0, outputs, targets, f_prime_activations, hidden_weights, output_weights, diag_indices, theta, alpha, N, L, exp_table);
-				get_gradient(input_weight_gradient_0, weight_gradient_0, output_weight_gradient_0, deltas_0, output_deltas_0, input_data, node_states, f_prime_activations, g_primes, diag_indices, theta, alpha, N, L, exp_table);
-				double cos_sim = cosine_similarity(input_weight_gradient, weight_gradient, output_weight_gradient, input_weight_gradient_0, weight_gradient_0, output_weight_gradient_0);
-				cout << cos_sim << endl;
-				write_gradients_to_file(input_weight_gradient, weight_gradient, output_weight_gradient, input_weight_gradient_0, weight_gradient_0, output_weight_gradient_0, epoch + 1, step_index, validation_batch_index);
-				*/
 				
 				input_weight_gradient = input_weight_gradient % input_weights_mask;
 				weight_gradient = weight_gradient % hidden_weights_mask;

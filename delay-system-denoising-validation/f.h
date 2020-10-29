@@ -21,7 +21,7 @@ static inline arma::mat f_prime_matrix(arma::mat &x){
     return cos(x);
 }
 
-// function g
+// function g (input preprocessing function)
 static inline double input_processing(double x){
     return 0.5 * M_PI * tanh(x);
 }
