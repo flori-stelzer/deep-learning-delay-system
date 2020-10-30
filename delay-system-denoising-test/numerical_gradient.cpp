@@ -10,9 +10,6 @@ void get_num_gradient(mat &num_input_weight_gradient, cube &num_weight_gradient,
 					  vec &input_data, mat &input_weights, cube &hidden_weights, mat &output_weights, vector<int> &diag_indices, double theta, double alpha, int N, int L, int N_h, double epsilon){
 	/*
 	Function computes the gradient numerically. So we check whether the backpropagation algorithm works correctly.
-	
-	Parameter:
-	...
 	*/
 	
 	// numerical partial derivatives for input layer

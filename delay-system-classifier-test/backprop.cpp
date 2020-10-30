@@ -64,10 +64,7 @@ void get_deltas(mat &deltas, double (&output_deltas)[P], double (&outputs)[P], d
 					break;
 				}
 				inner_sum += output_weights(p, j) * exp_table[j - n];
-				//cout << p << " " << j << " : ow: " << output_weights(p, j) << "; exp: " << exp_table[j - n] << endl;
 			}
-			//cout << "is: " << inner_sum << endl;
-			//cout << "od: " << output_deltas[p] << endl;
 			outer_sum += output_deltas[p] * inner_sum;
 		}
 		//cout << "os: " << outer_sum << endl;
@@ -107,13 +104,6 @@ void get_deltas(mat &deltas, double (&output_deltas)[P], double (&outputs)[P], d
 					}
 					inner_sum += hidden_weights(l, i, j) * exp_table[j - n];  // note l-index shift for hidden_weights
 				}
-				
-				//for (int j = n; j < N; ++j){
-				//	if (j - n >= exp_table_size){
-				//		break;
-				//	}
-				//	inner_sum += hidden_weights(l, i, j) * exp_table[j - n];
-				//}
 				outer_sum += deltas(l + 1, i) * inner_sum;
 			}
 			if (N - 1 - n < exp_table_size){
@@ -139,47 +129,10 @@ void get_deltas(mat &deltas, double (&output_deltas)[P], double (&outputs)[P], d
 				}
 				inner_sum += hidden_weights(l, i, j) * exp_table[j + 1];  // be careful: index count starts at zero (thats why j+1)
 			}
-			
-			//for (int j = 0; j < N; ++j){
-			//	if (j + 1 >= exp_table_size){
-			//		break;
-			//	}
-			//	inner_sum += hidden_weights(l, i, j) * exp_table[j + 1];  // be careful: index count starts at zero (thats why j+1)
-			//}
 			outer_sum += deltas(l + 1, i) * inner_sum;
 		}
 		delta_omega(l) = outer_sum;
 	}
-	
-	/*
-	for (int l = L - 2; l > -1; --l){
-		for (int n = 0; n < N; ++n){
-			double summe = 0;
-			for (int i = 0; i < N; ++i){
-				if (n == (N - 1) && i + 1 < exp_table_size){
-					partial = exp_table[i + 1];  // be careful: index count starts at zero (thats why +1)
-				} else {
-					partial = 0.0;
-				}
-				for (int n_prime_d : diag_indices){
-					int nu = n + n_prime_d;
-					if (nu < 0){
-						continue;
-					}
-					if (i - nu >= exp_table_size){
-						continue;
-					}
-					if (nu > i){
-						break;
-					}
-					partial += exp_table[i - nu] * phi * f_prime_activations(l + 1, nu) * hidden_weights(l, nu, n);  // note index shift for hidden_weights
-				}
-				summe += deltas(l + 1, i) * partial;
-			}
-			deltas(l, n) = summe;
-		}
-	}
-	*/
 }
 
 

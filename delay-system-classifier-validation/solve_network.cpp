@@ -23,7 +23,7 @@ void solve_network(mat &activations, mat &node_states, double (&output_activatio
 	                    To be filled with the activations of the output nodes.
 	outputs:            reference to double array of size P = 10.
 	                    To be filled with the output node states.
-	input_data:         reference to arma::vec of length M = 784.
+	input_data:         reference to arma::vec of length M.
 	                    Input vector. Contains the pixel values of an input image.
 	input_weights:      reference to arma::mat of size N x (M + 1)
 	                    Matrix W^in. Contains the weights connecting the input layer
@@ -127,7 +127,7 @@ void solve_network_decoupled(mat &activations, mat &node_states, double (&output
 	                    To be filled with the activations of the output nodes.
 	outputs:            reference to double array of size P = 10.
 	                    To be filled with the output node states.
-	input_data:         reference to arma::vec of length M = 784.
+	input_data:         reference to arma::vec of length M.
 	                    Input vector. Contains the pixel values of an input image.
 	input_weights:      reference to arma::mat of size N x (M + 1)
 	                    Matrix W^in. Contains the weights connecting the input layer
