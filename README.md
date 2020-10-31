@@ -1,13 +1,11 @@
 # deep-learning-delay-system
 
-This repository contains six versions of the deep learning delay system:
+This repository contains four versions of the deep learning delay system:
 
 * delay-system-classifier-validation: MNIST, Fashion-MNIST, CIFAR-10, SVHN classifications tasks, cross validation on training sets,
 * delay-system-classifier-test: MNIST, Fashion-MNIST, CIFAR-10, SVHN classifications tasks, validation on test sets,
 * delay-system-denoising-validation: Fashion-MNIST-denoising task, cross validation on training set,
 * delay-system-denoising-test: MNIST, Fashion-MNIST-denoising task, validation on test sets,
-* delay-system-simple-input-validation: direct input without matrix multiplication, CIFAR-10, SVHN classifications tasks, cross validation on training sets,
-* delay-system-simple-input-test:  direct input without matrix multiplication, CIFAR-10, SVHN classifications tasks, validation on test sets.
 
 For details about each version see the readme in the corresponding directory.
 

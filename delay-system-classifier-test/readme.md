@@ -17,7 +17,7 @@ The program can be excecuted with the following option:
 | -gradient_check                        | false             | Computes cosine similarity between backprop gradient and numerically computed gradient. Only availble for "dde_ibp"                                |
 | -N [integer number]                    | 100               | Number of nodes per hidden layer.                                                                                                                  |
 | -L [integer number]                    | 2                 | Number of hidden layers.                                                                                                                           |
-| -D [integer number]                    | 50                | Number of diagonals.                                                                                                                               |
+| -D [integer number]                    | 50                | Number of delays resp. diagonals in the hidden weight matrix.                                                                                      |
 | -theta [decimal number]                | 0.5               | Node separation.                                                                                                                                   |
 | -diag_method [name of method]          | uniform           | uniform, equidist or from_file                                                                                                                     |
 | -diag_distance [integer number]        | 0                 | Distance between diagonals if diag_method is equi_dist, minimum distance between diagonals if diag_method is uniform, otherwise ignored.           |
