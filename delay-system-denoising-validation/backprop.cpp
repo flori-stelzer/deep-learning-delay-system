@@ -8,7 +8,7 @@ using namespace globalconstants;
 
 void get_deltas(mat &deltas, double (&output_deltas)[P], double (&outputs)[P], double (&targets)[P], mat &f_prime_activations, cube hidden_weights, mat output_weights, vector<int> &diag_indices, double theta, double alpha, int N, int L, vector<double> exp_table){
 	/*
-	Function to compute the deltas for backpropagation.
+	Function to compute the deltas for layer-by-layer backpropagation.
 	
 	Args:
 	deltas: reference to armadillo matrix of size L x N.
@@ -137,7 +137,7 @@ void get_deltas(mat &deltas, double (&output_deltas)[P], double (&outputs)[P], d
 
 void get_gradient(mat &input_weight_gradient, cube &weight_gradient, mat &output_weight_gradient, mat &deltas, double (&output_deltas)[P], vec &input_data, mat &node_states, mat &f_prime_activations, vec &g_primes, vector<int> diag_indices, double theta, double alpha, int N, int L, vector<double> exp_table){
 	/*
-	Function to compute the gradient.
+	Function to compute the gradient using layer-by-layer backpropagation.
 	
 	Args:
 	input_weight_gradient: reference to arma::mat of size N x (M + 1).
@@ -214,7 +214,7 @@ void get_gradient(mat &input_weight_gradient, cube &weight_gradient, mat &output
 
 void get_gradient_classical_backprop(mat &input_weight_gradient, cube &weight_gradient, mat &output_weight_gradient, vec &input_data, mat &node_states, mat &f_prime_activations, vec &g_primes, double (&outputs)[P], double (&targets)[P], cube hidden_weights, mat output_weights, vector<int> diag_indices, int N, int L){
 	/*
-	Function to compute the gradient using classical backpropagation.
+	Function to compute the gradient using backpropagation ignoring local connections.
 	For the hidden weights only the gradients for the nonzero diagonals (and the bias weights) must be nonzero. 
 	
 	Args:
@@ -232,6 +232,8 @@ void get_gradient_classical_backprop(mat &input_weight_gradient, cube &weight_gr
 	             Contains states of the hidden nodes.
 	f_prime_activations: reference to armadillo matrix of size L x N.
 	                     Contains the values of f' at the activations of the system (or network).
+	g_primes: reference to armadillo vector of size N.
+			  Contains the values of g'(a^in_n).
 	outputs: reference to double array of length P = 10.
 	         Contains the outputs of the system.
 	targets: reference to double array of length P = 10.
@@ -280,6 +282,153 @@ void get_gradient_classical_backprop(mat &input_weight_gradient, cube &weight_gr
 		}
 	}
 	
+	// input weight gradient
+	for (int n = 0; n < N; ++n){
+		for (int m = 0; m < M; ++m){
+			input_weight_gradient(n, m) = deltas(0, n) * input_data(m)  * g_primes(n);
+		}
+		// for m = M + 1
+		input_weight_gradient(n, M) = deltas(0, n)  * g_primes(n);
+	}
+	
+	// hidden weight gradient
+	for (int l = 1; l < L; ++l){
+		for (int n = 0; n < N; ++n){
+			for (int n_prime_d : diag_indices){
+				int j = n - n_prime_d;
+				if (j >= N){
+					continue;
+				}
+				if (j < 0){
+					break;
+				}
+				weight_gradient(l - 1, n, j) = deltas(l, n) * node_states(l - 1, j);
+			}
+			// for j = N + 1
+			weight_gradient(l - 1, n, N) = deltas(l, n);
+		}
+	}
+		
+	// output weight gradient
+	for (int p = 0; p < P; ++p){
+		for (int n = 0; n < N; ++n){
+			output_weight_gradient(p, n) = output_deltas[p] * node_states(L - 1, n);
+		}
+		output_weight_gradient(p, N) = output_deltas[p];  // for bias output weight
+	}
+}
+
+
+void get_gradient_node_by_node(mat &input_weight_gradient, cube &weight_gradient, mat &output_weight_gradient, vec &input_data, mat &node_states, mat &f_prime_activations, vec &g_primes, double (&outputs)[P], double (&targets)[P], cube hidden_weights, mat output_weights, vector<int> diag_indices, int N, int L, double theta, double alpha){
+	/*
+	Function to compute the gradient using node-by-node backpropagation.
+	For the hidden weights only the gradients for the nonzero diagonals (and the bias weights) must be nonzero. 
+	
+	Args:
+	input_weight_gradient: reference to arma::mat of size N x (M + 1).
+	                       To be filled with partial derivatives w.r.t. input weights.
+	weight_gradient: reference to arma::cube of size (L - 1) x N x (N + 1).
+	                 Initially filled with zeros.
+	                 To be filled with partial derivatives w.r.t. hidden weights.
+					 For constant zero weights, the corresponding entry of the cube must stay zero.
+	output_weight_gradient: reference to arma::mat of size P x (N + 1).
+							To be filled with partial derivatives w.r.t. output weights.
+	input_data: reference to arma::vec of length M = 784.
+	            Input vector. Contains the pixel values of an input image.
+	node_states: reference to arma::mat with size L x N.
+	             Contains states of the hidden nodes.
+	f_prime_activations: reference to armadillo matrix of size L x N.
+	                     Contains the values of f' at the activations of the system (or network).
+	g_primes: reference to armadillo vector of size N.
+			  Contains the values of g'(a^in_n).
+	outputs: reference to double array of length P = 10.
+	         Contains the outputs of the system.
+	targets: reference to double array of length P = 10.
+	         Contains the target which should be matched by the outputs.
+	hidden_weights: reference to armadillo cube of size (L - 1) x N x (N + 1).
+	                Contains the hidden weights.
+	output_weights: reference to armadillo matrix of size P x (N + 1), where P = 10.
+	                Contains the output weights.
+	diag_indices: reference to int vector of length D.
+	              Contains the indices n'_d for the nonzero diagonals of the hidden weight matrices.
+	N: int.
+	   Nodes per hidden layer (except bias node).
+	L: int.
+	   Number of hidden layers.
+	theta: double.
+	       Node Separation. theta = T / N.
+	alpha: double.
+	       Factor for the linear dynamics. Must be negative.
+	*/
+
+
+	// arrays to store partial derivatives:
+	mat deltas(L, N, fill::zeros);
+	double Delta;
+	double output_deltas[P];
+
+	double local_coupling = exp(alpha * theta);
+	double phi = (local_coupling - 1.0) / alpha;
+	
+
+	// Step (i)
+	// get output deltas (partial derivatives w.r.t. output activations)
+	for (int p = 0; p < P; ++p){
+		output_deltas[p] = outputs[p] - targets[p];
+	}
+
+
+	// Step (ii)
+	// get Deltas for last hidden layer (partial derivatives w.r.t. node states)
+	// and get deltas for last hidden layer (partial derivatives w.r.t. node activations)
+	Delta = 0;
+	for (int p = 0; p < P; ++p){
+		Delta += output_deltas[p] * output_weights(p, N - 1);
+	}
+	deltas(L - 1, N - 1) = Delta * phi * f_prime_activations(L - 1, N - 1);
+	for (int n = N - 2; n >= 0; --n){
+		Delta = local_coupling * Delta;
+		for (int p = 0; p < P; ++p){
+			Delta += output_deltas[p] * output_weights(p, n);
+		}
+		deltas(L - 1, n) = Delta * phi * f_prime_activations(L - 1, n);
+	}
+
+
+	// Step (iii)
+	// for hidden layer L - 1 to 1 get Deltas and deltas
+	for (int ell = L - 2; ell >= 0; --ell){
+		Delta = local_coupling * Delta;
+		for (int n_prime_d : diag_indices){
+			int i = N - 1 + n_prime_d;
+			if (i < 0){
+				continue;
+			}
+			if (i >= N){
+				break;
+			}
+			Delta += deltas(ell + 1, i) * hidden_weights(ell, i, N - 1);
+		}
+		deltas(ell, N - 1) = Delta * phi * f_prime_activations(ell, N - 1);
+		for (int n = N - 2; n >= 0; --n){
+			Delta = local_coupling * Delta;
+			for (int n_prime_d : diag_indices){
+				int i = n + n_prime_d;
+				if (i < 0){
+					continue;
+				}
+				if (i >= N){
+					break;
+				}
+				Delta += deltas(ell + 1, i) * hidden_weights(ell, i, n);
+			}
+			deltas(ell, n) = Delta * phi * f_prime_activations(ell, n);
+		}
+	}
+
+
+	// Steps (iv)-(vi)
+
 	// input weight gradient
 	for (int n = 0; n < N; ++n){
 		for (int m = 0; m < M; ++m){

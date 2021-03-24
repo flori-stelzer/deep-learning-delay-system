@@ -500,8 +500,7 @@ int main(int argc, char const *argv[])
 			clock_t start_backprop = clock();
 			mat f_prime_activations = f_prime_matrix(activations);
 			if (grad_comp == "backprop_standard"){
-				get_deltas(deltas, output_deltas, outputs, targets, f_prime_activations, hidden_weights%hidden_weights_mask, output_weights%output_weights_mask, diag_indices, theta, alpha, N, L, exp_table);
-				get_gradient(input_weight_gradient, weight_gradient, output_weight_gradient, deltas, output_deltas, input_data, node_states, f_prime_activations, g_primes, diag_indices, theta, alpha, N, L, exp_table);
+				get_gradient_node_by_node(input_weight_gradient, weight_gradient, output_weight_gradient, input_data, node_states, f_prime_activations, g_primes, outputs, targets, hidden_weights%hidden_weights_mask, output_weights%output_weights_mask, diag_indices, N, L, theta, alpha);	
 			} else if (grad_comp == "backprop_classic"){
 				get_gradient_classical_backprop(input_weight_gradient, weight_gradient, output_weight_gradient, input_data, node_states, f_prime_activations, g_primes, outputs, targets, hidden_weights%hidden_weights_mask, output_weights%output_weights_mask, diag_indices, N, L);
 			} else {
