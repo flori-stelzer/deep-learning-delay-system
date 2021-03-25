@@ -23,6 +23,7 @@ In addition to the code and standard C++ packages, the following are required:
 * MNIST dataset
 * Fashion-MNIST dataset
 * CIFAR-10 dataset
+* CIFAR-100 dataset
 * SVHN (cropped version) dataset
 
 The datasets need to be provided in the corresponding "data-..." folders in a file format readable for the program. Python scripts to parse the original datasets and to create the readable files are provides in the directory "parse-data".
