@@ -16,7 +16,7 @@ namespace globalconstants
 	//const int number_of_training_batches = 5;
     //const int training_batch_size = 10000;
     //const int test_batch_size = 10000;
-        
+    
     // uncomment if task is SVHN:
     //const int M = 3072;  // number of features = number of input nodes
 	//const int P = 10;  // number of classes = number of output nodes
@@ -24,6 +24,12 @@ namespace globalconstants
     //const int training_batch_size = 12209;
     //const int test_batch_size = 26032;
 	
+    // uncomment if task is CIFAR-100-coarse:
+    //const int M = 3072;  // number of features = number of input nodes
+	//const int P = 20;  // number of classes = number of output nodes
+	//const int number_of_training_batches = 5;
+    //const int training_batch_size = 10000;
+    //const int test_batch_size = 10000;
 }
 
 #endif

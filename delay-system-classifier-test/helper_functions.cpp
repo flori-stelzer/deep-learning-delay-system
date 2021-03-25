@@ -108,9 +108,17 @@ void read_files(cube &train_images, mat &test_images, int (&train_labels)[number
 		string train_labels_string;
 		getline(train_labels_file, train_labels_string);
 		train_labels_file.close();
-		for(int image_index = 0; image_index < training_batch_size; ++image_index){
-			char c = train_labels_string[image_index];
-			train_labels[batch_index][image_index] = c - '0';
+		if (data_dir == "data-CIFAR-100-coarse"){
+			for(int image_index = 0; image_index < training_batch_size; ++image_index){
+				char c1 = train_labels_string[2*image_index];
+				char c2 = train_labels_string[2*image_index+1];
+				train_labels[batch_index][image_index] = 10 * (c1 - '0') + (c2 - '0');
+			}
+		} else {
+			for(int image_index = 0; image_index < training_batch_size; ++image_index){
+				char c = train_labels_string[image_index];
+				train_labels[batch_index][image_index] = c - '0';
+			}
 		}
 	}
 	
@@ -120,9 +128,18 @@ void read_files(cube &train_images, mat &test_images, int (&train_labels)[number
 	string test_labels_string;
 	getline(test_labels_file, test_labels_string);
 	test_labels_file.close();
-	for(int image_index = 0; image_index < test_batch_size; ++image_index){
-		char c = test_labels_string[image_index];
-		test_labels[image_index] = c - '0';
+
+	if (data_dir == "data-CIFAR-100-coarse"){
+		for(int image_index = 0; image_index < test_batch_size; ++image_index){
+			char c1 = test_labels_string[2*image_index];
+			char c2 = test_labels_string[2*image_index+1];
+			test_labels[image_index] = 10 * (c1 - '0') + (c2 - '0');
+		}
+	} else {
+		for(int image_index = 0; image_index < test_batch_size; ++image_index){
+			char c = test_labels_string[image_index];
+			test_labels[image_index] = c - '0';
+		}
 	}
 }
 

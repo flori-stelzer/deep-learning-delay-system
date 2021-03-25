@@ -35,7 +35,7 @@ int main(int argc, char const *argv[])
 	// print message to results file
 	string print_msg = "Simulation of the deep learning delay system.";
 	
-	// task, possible options are "MNIST", "Fashion-MNIST", "CIFAR-10", "SVHN"
+	// task, possible options are "MNIST", "Fashion-MNIST", "CIFAR-10", "SVHN", "CIFAR-100-coarse"
 	string task = katana::getCmdOption(argv, argv + argc, "-task", "MNIST");
 	// modify global_constants.h accordingly!
 	
@@ -208,6 +208,8 @@ int main(int argc, char const *argv[])
 		data_dir = "data-Fashion-MNIST";
 	} else if (task == "CIFAR-10"){
 		data_dir = "data-CIFAR-10";
+	} else if (task == "CIFAR-100-coarse"){
+		data_dir = "data-CIFAR-100-coarse";
 	} else if (task == "SVHN"){
 		data_dir = "data-SVHN";
 	} else {
