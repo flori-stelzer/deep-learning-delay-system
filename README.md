@@ -6,8 +6,8 @@ This github provides the code used for implementing a deep neural network with a
 
 This repository contains four versions of the deep learning delay system, each individually compiled for a specific set of tasks. We have also separated the test and training sets:
 
-* delay-system-classifier-validation: MNIST, Fashion-MNIST, CIFAR-10, SVHN classifications tasks, cross validation on training sets,
-* delay-system-classifier-test: MNIST, Fashion-MNIST, CIFAR-10, SVHN classifications tasks, validation on test sets,
+* delay-system-classifier-validation: MNIST, Fashion-MNIST, CIFAR-10, CIFAR-100 (coarse labels), SVHN (cropped) classifications tasks, cross validation on training sets,
+* delay-system-classifier-test: MNIST, Fashion-MNIST, CIFAR-10, CIFAR-100 (coarse labels), SVHN (cropped) classifications tasks, validation on test sets,
 * delay-system-denoising-validation: Fashion-MNIST-denoising task, cross validation on training set,
 * delay-system-denoising-test: MNIST, Fashion-MNIST-denoising task, validation on test sets,
 

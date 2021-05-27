@@ -11,7 +11,7 @@ The program can be excecuted with the following option:
 | flag                                   | default value     | explanation                                                                                                                                        |
 | -------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | -filename [filename.txt]               | filename.txt      | Sets the filename of the textfile containing the simulation results.                                                                               |
-| -task [name]                           | MNIST             | MNIST, Fashion-MNIST, CIFAR-10 and SVHN are available options.                                                                                     |
+| -task [name]                           | MNIST             | MNIST, Fashion-MNIST, CIFAR-10, CIFAR-100-coarse and SVHN are available options.                                                                                     |
 | -validation_batch [integer number]     | 0                 | If 0, then cross validation. Otherwise the given number is the number of the validation batch and the remaining batches are used for the training. |
 | -system_simu [name]                    | dde_ibp           | Choose dde_ibp for simulation with delay system, choose decoupled_network for simulation with MLP.                                                 |
 | -grad_comp [name]                      | backprop_standard | Choose backprop_standard for dde_ibp and backprop_classic for decoupled_network.                                                                   |
