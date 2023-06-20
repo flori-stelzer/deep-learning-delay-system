@@ -36,7 +36,7 @@ int main(int argc, char const *argv[])
 	string print_msg = "Simulation of the deep learning delay system.";
 	
 	// task, possible options are "MNIST", "Fashion-MNIST", "CIFAR-10", "SVHN", "CIFAR-100-coarse"
-	string task = katana::getCmdOption(argv, argv + argc, "-task", "MNIST");
+	string task = katana::getCmdOption(argv, argv + argc, "-task", "CIFAR-10");
 	// modify global_constants.h accordingly!
 	
 	// print weights (and diagonals) after each training epoch to text files in weights folder
